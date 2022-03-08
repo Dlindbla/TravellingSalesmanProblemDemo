@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox alignment="CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.dlindbla.travellingsalesmanproblemdemo.TSPCanvasController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+    </padding>
+   <children>
+      <Canvas fx:id="canvas" height="1000.0" style="-fx-background-color: #c93232" width="1000.0" />
+      <HBox prefHeight="100.0" prefWidth="200.0">
+         <children>
+            <VBox prefHeight="200.0" prefWidth="100.0">
+               <children>
+                  <Button fx:id="runButton" mnemonicParsing="false" onAction="#solve" prefHeight="25.0" prefWidth="104.0" text="Run" />
+                  <Button fx:id="clearButton" mnemonicParsing="false" prefHeight="25.0" prefWidth="109.0" text="Clear" />
+                  <Button fx:id="generateButton" mnemonicParsing="false" onAction="#redrawPoints" prefHeight="25.0" prefWidth="109.0" text="generate" />
+               </children>
+            </VBox>
+            <VBox prefHeight="100.0" prefWidth="264.0">
+               <children>
+                  <TextField fx:id="seedField" />
+                  <TextField fx:id="pointAmountField" />
+               </children>
+            </VBox>
+            <Button fx:id="twoOptButton" mnemonicParsing="false" onAction="#draw2opt" prefHeight="25.0" prefWidth="95.0" text="Draw 2-opt" />
+            <Button fx:id="threeOptButton" mnemonicParsing="false" onAction="#draw3opt" prefHeight="25.0" prefWidth="94.0" text="Draw 3-opt" />
+            <Button fx:id="saButton" mnemonicParsing="false" onAction="#drawSA" prefHeight="25.0" prefWidth="87.0" text="Draw SA" />
+            <Button fx:id="" mnemonicParsing="false" prefHeight="25.0" prefWidth="89.0" text="Draw AC" />
+            <Button fx:id="bruteButton" onAction="#drawBrute" mnemonicParsing="false" text="Draw Brute" />
+         </children>
+      </HBox>
+   </children>
+</VBox>
