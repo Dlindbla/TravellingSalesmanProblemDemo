@@ -22,6 +22,9 @@ public class HelloApplication extends Application {
         stage.setTitle("TSP");
         stage.show();
 
+        TSPCanvasController tspCanvasController = fxmlLoader.getController();
+        tspCanvasController.configureNodes();
+
 
 
     }

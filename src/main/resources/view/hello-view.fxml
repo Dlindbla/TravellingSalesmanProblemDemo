@@ -24,15 +24,16 @@
             </VBox>
             <VBox prefHeight="100.0" prefWidth="264.0">
                <children>
-                  <TextField fx:id="seedField" />
-                  <TextField fx:id="pointAmountField" />
+                  <TextField fx:id="nodeCountField" />
                </children>
             </VBox>
             <Button fx:id="twoOptButton" mnemonicParsing="false" onAction="#draw2opt" prefHeight="25.0" prefWidth="95.0" text="Draw 2-opt" />
             <Button fx:id="threeOptButton" mnemonicParsing="false" onAction="#draw3opt" prefHeight="25.0" prefWidth="94.0" text="Draw 3-opt" />
             <Button fx:id="saButton" mnemonicParsing="false" onAction="#drawSA" prefHeight="25.0" prefWidth="87.0" text="Draw SA" />
-            <Button fx:id="" mnemonicParsing="false" prefHeight="25.0" prefWidth="89.0" text="Draw AC" />
-            <Button fx:id="bruteButton" onAction="#drawBrute" mnemonicParsing="false" text="Draw Brute" />
+            <Button fx:id="acButton" mnemonicParsing="false" onAction="#drawAC" prefHeight="25.0" prefWidth="89.0" text="Draw AC" />
+            <Button fx:id="bruteButton" mnemonicParsing="false" onAction="#drawBrute" text="Draw Brute" />
+            <Button fx:id="greedyButton" mnemonicParsing="false" onAction="#drawGreedy" prefHeight="25.0" prefWidth="90.0" text="Draw Greedy" />
+            <Button fx:id="statsButton" mnemonicParsing="false" onAction="#generateStats" text="stats" />
          </children>
       </HBox>
    </children>

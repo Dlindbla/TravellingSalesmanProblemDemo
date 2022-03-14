@@ -5,6 +5,9 @@ import javafx.fxml.Initializable;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 
@@ -13,15 +16,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.ResourceBundle;
+import java.util.function.UnaryOperator;
 
 import static java.lang.Math.*;
 
 public class TSPCanvasController implements Initializable {
 
 
-    private double width = 980;
-    private double height = 980;
-    private int pointsToGenerate = 10;
+    private double width = 1000;
+    private double height = 1000;
+    private int pointsToGenerate = 50;
 
     private int distanceArrayWidth;
     private int distanceArrayHeight;
@@ -35,6 +39,9 @@ public class TSPCanvasController implements Initializable {
     Canvas canvas;
 
     @FXML
+    TextField nodeCountField;
+
+    @FXML
     Button generateButton;
 
     @FXML
@@ -46,7 +53,13 @@ public class TSPCanvasController implements Initializable {
     @FXML
     Button saButton;
     @FXML
+    Button acButton;
+    @FXML
     Button bruteButton;
+    @FXML
+    Button greedyButton;
+    @FXML
+    Button statsButton;
 
 
 
@@ -63,56 +76,45 @@ public class TSPCanvasController implements Initializable {
 
     }
 
+    public void configureNodes(){
+        UnaryOperator<TextFormatter.Change> integerFilter = change -> {
+            String input = change.getText();
+            if (input.matches("[0-9]*")) {
+                return change;
+            }
+            return null;
+        };
+        nodeCountField.setTextFormatter(new TextFormatter<String>(integerFilter));
+    }
+
+
     public void setSeed(long seed){
         this.random.setSeed(seed);
     }
 
     @FXML
     public void solve(){
-
-        /*
-        //Bruteforce algorithm
-        BruteForceAlgorithm bfa = new BruteForceAlgorithm();
-        ArrayList<Point> solvedPath = bfa.findPath(points,distanceMatrix);
-        generateLinesFromArrayList(solvedPath);
-        */
-
         //2-OPT algorithm
-
-
         TSPable twoOPT = new TwoOPT(points,distanceMatrix);
         Point[] path = twoOPT.findPath(points);
         double twoOPTDistance = calculateDistancePointArray(path);
-        ArrayList<Point> pathPoints = new ArrayList<>(Arrays.asList(path));
-        //generateLinesFromArrayList(pathPoints);
-
-
 
         //3-OPT algorithm
         TSPable threeOPT = new ThreeOPT(points,distanceMatrix);
         Point[] path2 = threeOPT.findPath(points);
         double threeOPTDistance = calculateDistancePointArray(path2);
-        ArrayList<Point> pathPoints2 = new ArrayList<>(Arrays.asList(path));
-        generateLinesFromArrayList(pathPoints);
-
-
-        //Run both 2-, and 3-opt and print the performance
-
-
 
         //simulated annealing
-        /*
-        TSPable simulatedAnnealing = new SimulatedAnnealing(points,distanceMatrix,300,0.000001);
+        double currentDistance = calculateDistancePointArray(points) ;
+        TSPable simulatedAnnealing = new SimulatedAnnealing(points,distanceMatrix,currentDistance,0.00001);
         Point[] path3 = simulatedAnnealing.findPath(points);
         double simulatedAnnealingDistance = calculateDistancePointArray(path3);
         ArrayList<Point> pathPoints3 = new ArrayList<>(Arrays.asList(path3));
         generateLinesFromArrayList(pathPoints3);
-        */
 
-        //System.out.println("Distance of Simulated Annealing is : " + simulatedAnnealingDistance);
-        System.out.println("Total distance for 2-OPT algorithm is : " + twoOPTDistance);
-        System.out.println("Total distance for 3-OPT algorithm is : " + threeOPTDistance);
-
+        System.out.println("Total distance for 2-OPT algorithm is    : " + twoOPTDistance);
+        System.out.println("Total distance for 3-OPT algorithm is    : " + threeOPTDistance);
+        System.out.println("Total distance of Simulated Annealing is : " + simulatedAnnealingDistance);
     }
 
     @FXML
@@ -135,11 +137,24 @@ public class TSPCanvasController implements Initializable {
     }
     @FXML
     public void drawSA(){
-        TSPable simulatedAnnealing = new SimulatedAnnealing(points,distanceMatrix,300,0.000001);
+        //use the current distance of the generated path to use as a temperature for simulated annealing
+        double currentDistance = calculateDistancePointArray(points);
+        TSPable simulatedAnnealing = new SimulatedAnnealing(points,distanceMatrix,currentDistance,0.0001);
         Point[] path3 = simulatedAnnealing.findPath(points);
         double simulatedAnnealingDistance = calculateDistancePointArray(path3);
+        System.out.println("Total distance of Simulated Annealing is : " + simulatedAnnealingDistance);
         ArrayList<Point> pathPoints3 = new ArrayList<>(Arrays.asList(path3));
         generateLinesFromArrayList(pathPoints3);
+    }
+
+    @FXML
+    public void drawAC(){
+        TSPable antColony = new AntColonyOptimization(distanceMatrix);
+        Point[] path = antColony.findPath(points);
+        double antColonyDistance = calculateDistancePointArray(path);
+        ArrayList<Point> pathPoints = new ArrayList<>(Arrays.asList(path));
+        System.out.println("Total distance of Any Colony Optimization is : " + antColonyDistance);
+        generateLinesFromArrayList(pathPoints);
     }
 
     @FXML
@@ -149,11 +164,55 @@ public class TSPCanvasController implements Initializable {
         generateLinesFromArrayList(solvedPath);
     }
 
+    @FXML
+    public void drawGreedy(){
+        int[] indices = new int[points.length];
+        boolean[] visitedPlaces = new boolean[points.length];
+        int visitedPoints = 1;
+        //we start by visiting the first node
+        indices[0] = 0;
+        int currentIndex = 0;
+        visitedPlaces[currentIndex] = true;
+        while(visitedPoints < visitedPlaces.length){
+            int nextIndex = -1;
+            double currentShortestDistance = Double.MAX_VALUE;
+            for(int i = 0; i < visitedPlaces.length; i++) {
+                if(!visitedPlaces[i]){
+                    double tempDistance = distanceMatrix[currentIndex][i];
+                    if(tempDistance < currentShortestDistance){
+                        currentShortestDistance = tempDistance;
+                        nextIndex = i;
+                    }
+                }
+            }
+            visitedPlaces[nextIndex] = true;
+            indices[visitedPoints] = nextIndex;
+            currentIndex = nextIndex;
+            visitedPoints++;
+
+        }
+        Point[] returnPoints = new Point[points.length];
+        for(int i = 0; i < points.length; i++){
+            returnPoints[i] = points[indices[i]];
+        }
+
+        double greedyDistance = calculateDistancePointArray(returnPoints);
+        ArrayList<Point> pathPoints = new ArrayList<>(Arrays.asList(returnPoints));
+        System.out.println("Total distance of Greedy Algorithm is : " + greedyDistance);
+        generateLinesFromArrayList(pathPoints);
+    }
+
 
 
 
     @FXML
     public void redrawPoints(){
+
+        if(nodeCountField.getText() != ""){
+           Integer nodesCount = Integer.valueOf(nodeCountField.getText());
+           pointsToGenerate = nodesCount;
+        }
+
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
         generateRandomPoints(pointsToGenerate);
@@ -172,6 +231,13 @@ public class TSPCanvasController implements Initializable {
         return indices;
     }
 
+    public Point[] indicesToPoints(int[] indices){
+        Point[] returnPoints = new Point[indices.length];
+        for(int i = 0;i < indices.length;i++){
+            returnPoints[i] = points[indices[i]];
+        }
+        return  returnPoints;
+    }
 
     public int[] generateGreedyIndices(){
         int[] indices = new int[points.length];
@@ -200,6 +266,50 @@ public class TSPCanvasController implements Initializable {
 
         }
         return indices;
+    }
+
+
+    /***
+     * This will be a bit of a bloated method ( not to mention hard-coded )
+     */
+    public void generateStats(){
+
+        int totalRuns = 10000;
+
+        double greedyTotal = 0;
+        double twoOPTTotal = 0;
+        double threeOPTTotal = 0;
+        double simulatedAnnealingTotal = 0;
+        double antColonyTotal = 0;
+
+
+        for ( int i = 0 ; i < totalRuns ; i++){
+            generateRandomPoints(pointsToGenerate);
+            TSPable twoOPT = new TwoOPT(points,distanceMatrix);
+            TSPable threeOPT = new ThreeOPT(points,distanceMatrix);
+            TSPable antColony = new AntColonyOptimization(distanceMatrix);
+            double temperature = calculateDistancePointArray(indicesToPoints(generateGreedyIndices()));
+            TSPable simulatedAnnealing = new SimulatedAnnealing(points,distanceMatrix,temperature,0.0001);
+            twoOPTTotal += calculateDistancePointArray(twoOPT.findPath(points));
+            threeOPTTotal += calculateDistancePointArray(threeOPT.findPath(points));
+            antColonyTotal += calculateDistancePointArray(antColony.findPath(points));
+            greedyTotal += calculateDistancePointArray(indicesToPoints(generateGreedyIndices()));
+            simulatedAnnealingTotal += calculateDistancePointArray(simulatedAnnealing.findPath(points));
+        }
+
+        double greedyAverage = greedyTotal/totalRuns;
+        double twoOPTAverage = twoOPTTotal/totalRuns;
+        double threeOPTAverage = threeOPTTotal/totalRuns;
+        double simulatedAnnealingAverage = simulatedAnnealingTotal/totalRuns;
+        double antColonyAverage = antColonyTotal/totalRuns;
+
+
+        System.out.println("Average Distance of greedy algorithm on "+totalRuns+" runs is : " + greedyAverage);
+        System.out.println("Average Distance of twoOPT algorithm on "+totalRuns+" runs is : " + twoOPTAverage);
+        System.out.println("Average Distance of threeOPT algorithm on "+totalRuns+" runs is : " + threeOPTAverage);
+        System.out.println("Average Distance of simulated annealing algorithm on "+totalRuns+" runs is : " + simulatedAnnealingAverage);
+        System.out.println("Average Distance of ant colony algorithm on "+totalRuns+" runs is : " + antColonyAverage);
+
     }
 
 
@@ -258,19 +368,16 @@ public class TSPCanvasController implements Initializable {
         double y2 = points[indices[indices.length-1]].getY();
         gc.strokeLine(x1,y1,x2,y2);
     }
-    //Function for clearing everything
 
     public double calculateDistancePointArray(Point[] points){
         double distance = 0;
-        for (int i = 0 ; i < points.length; i++){
-            for(int j = 0 ; j < points.length; j++) {
-                double x1 = points[i].getX();
-                double x2 = points[j].getX();
-                double y1 = points[i].getY();
-                double y2 = points[j].getY();
-                double dist = sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
-                distance += dist;
-            }
+        for(int i = 0 ; i < points.length-1; i++){
+            double x1 = points[i].getX();
+            double x2 = points[i+1].getX();
+            double y1 = points[i].getY();
+            double y2 = points[i+1].getY();
+            double dist = sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
+            distance += dist;
         }
         double x1 = points[0].getX();
         double x2 = points[points.length-1].getX();
@@ -280,6 +387,9 @@ public class TSPCanvasController implements Initializable {
         distance += dist;
         return distance;
     }
+
+
+
 
 
 
