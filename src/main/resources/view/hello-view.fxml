@@ -25,6 +25,7 @@
             <VBox prefHeight="100.0" prefWidth="264.0">
                <children>
                   <TextField fx:id="nodeCountField" />
+                  <Button fx:id="timeStatsButton" mnemonicParsing="false" onAction="#generateAvgDistanceData" prefHeight="25.0" prefWidth="280.0" text="Generate time stats" />
                </children>
             </VBox>
             <Button fx:id="twoOptButton" mnemonicParsing="false" onAction="#draw2opt" prefHeight="25.0" prefWidth="95.0" text="Draw 2-opt" />

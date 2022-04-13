@@ -11,12 +11,15 @@ import javafx.scene.control.TextFormatter;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 
+import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 
@@ -34,6 +37,9 @@ public class TSPCanvasController implements Initializable {
     private double[][] distanceMatrix;
 
     private Random random;
+    private double simulatedAnnealingCoolingFactor = 0.001;
+
+
 
     @FXML
     Canvas canvas;
@@ -43,6 +49,8 @@ public class TSPCanvasController implements Initializable {
 
     @FXML
     Button generateButton;
+    @FXML
+    Button timeStatsButton;
 
     @FXML
     Button runButton;
@@ -106,7 +114,7 @@ public class TSPCanvasController implements Initializable {
 
         //simulated annealing
         double currentDistance = calculateDistancePointArray(points) ;
-        TSPable simulatedAnnealing = new SimulatedAnnealing(points,distanceMatrix,currentDistance,0.00001);
+        TSPable simulatedAnnealing = new SimulatedAnnealing(points,distanceMatrix,currentDistance,pointsToGenerate,simulatedAnnealingCoolingFactor);
         Point[] path3 = simulatedAnnealing.findPath(points);
         double simulatedAnnealingDistance = calculateDistancePointArray(path3);
         ArrayList<Point> pathPoints3 = new ArrayList<>(Arrays.asList(path3));
@@ -139,12 +147,38 @@ public class TSPCanvasController implements Initializable {
     public void drawSA(){
         //use the current distance of the generated path to use as a temperature for simulated annealing
         double currentDistance = calculateDistancePointArray(points);
-        TSPable simulatedAnnealing = new SimulatedAnnealing(points,distanceMatrix,currentDistance,0.0001);
+        TSPable simulatedAnnealing = new SimulatedAnnealing(points,distanceMatrix,currentDistance,pointsToGenerate,simulatedAnnealingCoolingFactor);
         Point[] path3 = simulatedAnnealing.findPath(points);
         double simulatedAnnealingDistance = calculateDistancePointArray(path3);
         System.out.println("Total distance of Simulated Annealing is : " + simulatedAnnealingDistance);
         ArrayList<Point> pathPoints3 = new ArrayList<>(Arrays.asList(path3));
         generateLinesFromArrayList(pathPoints3);
+
+        /***
+         * This part of the function will generate a CSV file of selected tour lengths
+         * which can be used to graph the history of the tours:
+         * It is implemented in the worst way possible for extra flavour
+         */
+        Double[] distanceHistory = simulatedAnnealing.distanceHistory();
+        System.out.println("Total size of SA history array : " + distanceHistory.length);
+        try {
+            toCSV("Distance_History_SimulatedAnnealing.csv",distanceHistory);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //This is not a good function by any means and does not do what it is supposed to
+    public <T> void toCSV(String fileName,T[] inputArray) throws IOException {
+        BufferedWriter br = new BufferedWriter(new FileWriter(fileName));
+        StringBuilder sb = new StringBuilder();
+        for (T element : inputArray) {
+            sb.append(element);
+            sb.append("\n");
+        }
+
+        br.write(sb.toString());
+        br.close();
     }
 
     @FXML
@@ -220,7 +254,7 @@ public class TSPCanvasController implements Initializable {
 
         int[] greedy = generateGreedyIndices();
         int[] seq = generateSequentialIndices();
-        drawLines(seq);
+        //drawLines(seq);
     }
 
     public int[] generateSequentialIndices(){
@@ -274,7 +308,7 @@ public class TSPCanvasController implements Initializable {
      */
     public void generateStats(){
 
-        int totalRuns = 10000;
+        int totalRuns = 10;
 
         double greedyTotal = 0;
         double twoOPTTotal = 0;
@@ -289,7 +323,7 @@ public class TSPCanvasController implements Initializable {
             TSPable threeOPT = new ThreeOPT(points,distanceMatrix);
             TSPable antColony = new AntColonyOptimization(distanceMatrix);
             double temperature = calculateDistancePointArray(indicesToPoints(generateGreedyIndices()));
-            TSPable simulatedAnnealing = new SimulatedAnnealing(points,distanceMatrix,temperature,0.0001);
+            TSPable simulatedAnnealing = new SimulatedAnnealing(points,distanceMatrix,temperature,pointsToGenerate,simulatedAnnealingCoolingFactor);
             twoOPTTotal += calculateDistancePointArray(twoOPT.findPath(points));
             threeOPTTotal += calculateDistancePointArray(threeOPT.findPath(points));
             antColonyTotal += calculateDistancePointArray(antColony.findPath(points));
@@ -308,11 +342,116 @@ public class TSPCanvasController implements Initializable {
         System.out.println("Average Distance of twoOPT algorithm on "+totalRuns+" runs is : " + twoOPTAverage);
         System.out.println("Average Distance of threeOPT algorithm on "+totalRuns+" runs is : " + threeOPTAverage);
         System.out.println("Average Distance of simulated annealing algorithm on "+totalRuns+" runs is : " + simulatedAnnealingAverage);
-        System.out.println("Average Distance of ant colony algorithm on "+totalRuns+" runs is : " + antColonyAverage);
+        //System.out.println("Average Distance of ant colony algorithm on "+totalRuns+" runs is : " + antColonyAverage);
+
+    }
+
+    public void generateTimeStats(){
+        int maxSize = pointsToGenerate;
+        Long[] twoOPTTimes = new Long[maxSize];
+        Long[] threeOPTTimes = new Long[maxSize];
+        Long[] simulatedAnnealingTimes = new Long[maxSize];
+        Long[] bruteForceTimes = new Long[maxSize];
+
+        for(int i = 1; i < maxSize; i++){
+            generateRandomPoints(i);
+            BruteForceAlgorithm bruteForce = new BruteForceAlgorithm();
+            double temperature = calculateDistancePointArray(indicesToPoints(generateGreedyIndices()));
+            TSPable twoOPT = new TwoOPT(points,distanceMatrix);
+            TSPable threeOPT = new ThreeOPT(points,distanceMatrix);
+            TSPable simulatedAnnealing = new SimulatedAnnealing(points,distanceMatrix,temperature,pointsToGenerate,simulatedAnnealingCoolingFactor);
+
+            long startTime = System.nanoTime();
+            twoOPT.findPath(points);
+            long endTime = System.nanoTime();
+            long duration = (endTime - startTime) ;
+            twoOPTTimes[i] = (duration);
+
+            startTime = System.nanoTime();
+            threeOPT.findPath(points);
+            endTime = System.nanoTime();
+            duration = (endTime   - startTime) ;
+            threeOPTTimes[i] = (duration);
+
+            startTime = System.nanoTime();
+            simulatedAnnealing.findPath(points);
+            endTime = System.nanoTime();
+            duration = (endTime - startTime) ;
+            simulatedAnnealingTimes[i] = (duration);
+
+            startTime = System.nanoTime();
+            bruteForce.findPath(points,distanceMatrix);
+            endTime = System.nanoTime();
+            duration = (endTime - startTime) ;
+            bruteForceTimes[i] = (duration);
+
+
+            System.out.println("Currently running iteration number : " + i);
+        }
+        //write a CSV file for each of the times for graphing in python
+        try {
+            toCSV("twoOPTTimes.csv",twoOPTTimes);
+            toCSV("threeOPTTimes.csv",threeOPTTimes);
+            toCSV("simulatedAnnealingTimes.csv",simulatedAnnealingTimes);
+            toCSV("bruteforcetimes.csv",bruteForceTimes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
 
+    public void generateAvgDistanceData(){
+
+        int maxPoints = 300;
+        int iterations = 10;
+
+        Double[] twoOPTDistances = new Double[maxPoints];
+        Double[] threeOPTDistances = new Double[maxPoints];
+        Double[] simulatedAnnealingDistances = new Double[maxPoints];
+        Double[] greedyDistances = new Double[maxPoints];
+        for(int i = 1 ; i < maxPoints; i++){
+            System.out.println("Currently running iteration : " + i);
+            Double tempTwoOpt = 0.0;
+            Double tempThreeOpt = 0.0;
+            Double tempSA = 0.0;
+            Double tempGreedy = 0.0;
+
+            for(int j = 0; j < iterations; j++){
+                generateRandomPoints(i);
+                double temperature = calculateDistancePointArray(indicesToPoints(generateGreedyIndices()));
+                TSPable twoOPT = new TwoOPT(points,distanceMatrix);
+                TSPable threeOPT = new ThreeOPT(points,distanceMatrix);
+                TSPable simulatedAnnealing = new SimulatedAnnealing(points,distanceMatrix,temperature,i,simulatedAnnealingCoolingFactor);
+
+                tempTwoOpt += calculateDistancePointArray(twoOPT.findPath(points));
+                tempThreeOpt += calculateDistancePointArray(threeOPT.findPath(points));
+                tempSA += calculateDistancePointArray(simulatedAnnealing.findPath(points));
+                tempGreedy += calculateDistancePointArray(indicesToPoints(generateGreedyIndices()));
+
+            }
+
+            tempTwoOpt = tempTwoOpt / iterations;
+            tempThreeOpt = tempThreeOpt / iterations;
+            tempSA = tempSA / iterations;
+            tempGreedy = tempGreedy / iterations;
+
+            twoOPTDistances[i] = tempTwoOpt;
+            threeOPTDistances[i] = tempThreeOpt;
+            simulatedAnnealingDistances[i] = tempSA;
+            greedyDistances[i] = tempGreedy;
+        }
+
+        try {
+            toCSV("twoOPTDistances.csv",twoOPTDistances);
+            toCSV("threeOPTDistances.csv",threeOPTDistances);
+            toCSV("simulatedAnnealingDistances.csv",simulatedAnnealingDistances);
+            toCSV("greedyDistances.csv",greedyDistances);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
 
 
     //Function for generating a random amount of points at random locations and drawing them

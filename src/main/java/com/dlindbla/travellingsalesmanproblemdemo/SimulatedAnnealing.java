@@ -1,5 +1,6 @@
 package com.dlindbla.travellingsalesmanproblemdemo;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -11,21 +12,24 @@ public class SimulatedAnnealing implements TSPable{
 
     private double coolingRate;
     private double startingTemperature;
+    private int swapsPerIteration;
 
     private int[] route;
     private double currentDistance = Double.MAX_VALUE;
-    private double bestDistance = Double.MAX_VALUE;
 
+    private ArrayList<Double> distanceHistoryArrayList = new ArrayList<>();
+    private Double[] distanceHistory;
 
-    public SimulatedAnnealing(Point[] points, double[][] distanceMatrix, double startingTemperature, double coolingRate){
+    public SimulatedAnnealing(Point[] points, double[][] distanceMatrix, double startingTemperature,
+                              int swapsPerIteration, double coolingRate){
         this.points = points;
         this.size = points.length;
         this.distanceMatrix = distanceMatrix;
+        this.swapsPerIteration = swapsPerIteration;
         this.coolingRate = coolingRate;
         this.startingTemperature = startingTemperature;
-        generateSequentialIndices();
+        generateGreedyIndices();
         currentDistance = calculateTotalDistance(route);
-        bestDistance = currentDistance;
     }
 
 
@@ -33,44 +37,47 @@ public class SimulatedAnnealing implements TSPable{
     public Point[] findPath(Point[] a) {
         double temperature = startingTemperature;
         Random random = new Random();
-        int iterations = 0;
-
 
         while(temperature > 1){
 
-            //generate two random points to use as two opt swaps
-            int pos1 = random.nextInt(size);
-            int pos2 = random.nextInt(size);
+            for(int i = 0; i < swapsPerIteration; i++) {
+                //generate two random points to use as two opt swaps
+                int pos1 = random.nextInt(size);
+                int pos2 = random.nextInt(size);
 
-            //make sure they aren't the same value
-            while(pos1==pos2){pos2 = random.nextInt(size);}
+                //make sure they aren't the same value
+                while (pos1 == pos2) {
+                    pos2 = random.nextInt(size);
+                }
 
-            if(pos1 > pos2){
-                int temp = pos1;
-                pos1 = pos2;
-                pos2 = temp;
-            }
+                if (pos1 > pos2) {
+                    int temp = pos1;
+                    pos1 = pos2;
+                    pos2 = temp;
+                }
 
-            int[] newRoute = twoOptSwap(pos1,pos2);
+                int[] newRoute = twoOptSwap(pos1, pos2);
 
-            double newDistance = calculateTotalDistance(newRoute);
+                double newDistance = calculateTotalDistance(newRoute);
 
-            if(newDistance < currentDistance){
-                route = newRoute;
-                currentDistance = newDistance;
-            }
-            // Stochastically decide whether to accept new route or not (if it is worse)
-            else if(Math.exp((currentDistance - newDistance) / temperature) > Math.random()) {
-                route = newRoute;
-                currentDistance = newDistance;
-                //System.out.println("new route chosen");
+                if (newDistance < currentDistance) {
+                    route = newRoute;
+                    currentDistance = newDistance;
+                    distanceHistoryArrayList.add(currentDistance);
+
+                }
+                // Stochastically decide whether to accept new route or not (if it is worse)
+                else if (Math.exp((currentDistance - newDistance) / temperature) > Math.random()) {
+                    route = newRoute;
+                    currentDistance = newDistance;
+                    distanceHistoryArrayList.add(currentDistance);
+                    //System.out.println("new route chosen");
+                }
             }
 
 
 
             temperature *= (1-coolingRate);
-            iterations++;
-            //if(iterations % 100 == 0){System.out.println("Total iterations so far : " + iterations);}
         }
 
         Point[] returnPoints = new Point[points.length];
@@ -81,8 +88,13 @@ public class SimulatedAnnealing implements TSPable{
     }
 
     @Override
-    public double[] distanceHistory() {
-        return new double[0];
+    public Double[] distanceHistory() {
+        //Technical debt caught up to me fast
+        distanceHistory = new Double[distanceHistoryArrayList.size()];
+        for(int i = 0; i < distanceHistoryArrayList.size(); i++){
+            distanceHistory[i] = distanceHistoryArrayList.get(i);
+        }
+        return distanceHistory;
     }
 
     public int[] twoOptSwap(int j, int k){

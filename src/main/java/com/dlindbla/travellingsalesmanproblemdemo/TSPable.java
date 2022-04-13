@@ -5,6 +5,6 @@ public interface TSPable {
 
 
     Point[] findPath(Point[] a);
-    double[] distanceHistory();
+    Double[] distanceHistory();
 
 }

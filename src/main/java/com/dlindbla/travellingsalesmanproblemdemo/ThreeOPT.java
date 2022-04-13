@@ -1,8 +1,6 @@
 package com.dlindbla.travellingsalesmanproblemdemo;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class ThreeOPT implements TSPable{
 
@@ -23,7 +21,36 @@ public class ThreeOPT implements TSPable{
         this.points = points;
         this.distanceMatrix = distanceMatrix;
         this.route = new int[points.length];
-        generateSequentialIndices();
+        generateGreedyIndices();
+    }
+
+    public void generateGreedyIndices(){
+        int[] indices = new int[points.length];
+        boolean[] visitedPlaces = new boolean[points.length];
+        int visitedPoints = 1;
+        //we start by visiting the first node
+        indices[0] = 0;
+        int currentIndex = 0;
+        visitedPlaces[currentIndex] = true;
+        while(visitedPoints < visitedPlaces.length){
+            int nextIndex = -1;
+            double currentShortestDistance = Double.MAX_VALUE;
+            for(int i = 0; i < visitedPlaces.length; i++) {
+                if(!visitedPlaces[i]){
+                    double tempDistance = distanceMatrix[currentIndex][i];
+                    if(tempDistance < currentShortestDistance){
+                        currentShortestDistance = tempDistance;
+                        nextIndex = i;
+                    }
+                }
+            }
+            visitedPlaces[nextIndex] = true;
+            indices[visitedPoints] = nextIndex;
+            currentIndex = nextIndex;
+            visitedPoints++;
+
+        }
+        route = indices;
     }
 
     public void generateSequentialIndices(){
@@ -123,8 +150,8 @@ public class ThreeOPT implements TSPable{
     }
 
     @Override
-    public double[] distanceHistory() {
-        return new double[0];
+    public Double[] distanceHistory() {
+        return new Double[0];
     }
 
     public int[] swap(int[] route, int j, int k){

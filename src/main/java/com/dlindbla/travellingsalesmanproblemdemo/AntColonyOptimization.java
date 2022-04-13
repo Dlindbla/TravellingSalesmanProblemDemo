@@ -184,7 +184,7 @@ public class AntColonyOptimization implements TSPable{
     }
 
     @Override
-    public double[] distanceHistory() {
-        return new double[0];
+    public Double[] distanceHistory() {
+        return new Double[0];
     }
 }

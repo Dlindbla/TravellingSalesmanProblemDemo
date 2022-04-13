@@ -2,9 +2,6 @@ package com.dlindbla.travellingsalesmanproblemdemo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-
-import static java.lang.Math.sqrt;
 
 public class TwoOPT implements TSPable{
 
@@ -89,17 +86,11 @@ public class TwoOPT implements TSPable{
     public Point[] findPath(Point[] points) {
         boolean improving = true;
         while(improving){
-            //System.out.println("looping");
             improving = false;
             for (int i = 0; i < route.length-1; i++) {
                 for (int k = i+1; k < route.length; k++) {
-
                     int[] newRoute = twoOptSwap(i, k);
-
-                    //System.out.println(Arrays.toString(route));
-
                     double newRouteDistance = calculateTotalDistance(newRoute);
-
                     if (newRouteDistance < currentBestDistance) {
                         currentBestDistance = newRouteDistance;
                         route = newRoute;
@@ -117,8 +108,8 @@ public class TwoOPT implements TSPable{
     }
 
     @Override
-    public double[] distanceHistory() {
-        return new double[0];
+    public Double[] distanceHistory() {
+        return new Double[0];
     }
 
     public int[] twoOptSwap(int j, int k){
